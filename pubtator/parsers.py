@@ -42,7 +42,7 @@ class PubTatorParser(Parser):
 
     def _mark_matched_annotation(self, wi, we, sentence_parts, cid, cid_type):
         for j in range(wi, we):
-            if sentence_parts['entity_cids'][j] == 'O':
+            if sentence_parts['entity_cids'][j] is None:
                 sentence_parts['entity_cids'][j] = cid
                 sentence_parts['entity_types'][j] = cid_type
 

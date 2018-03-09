@@ -75,14 +75,14 @@ class LineCorpusParser(Parser):
                     parts['words'].append(str(token))
                     parts['lemmas'].append(token.lemma_)
                     parts['pos_tags'].append(token.tag_)
-                    parts['ner_tags'].append(token.ent_type_ if token.ent_type_ else 'O')
+                    parts['ner_tags'].append(token.ent_type_ if token.ent_type_ else None)
                     head_idx = 0 if token.head is token else token.head.i - sent[0].i + 1
                     parts['dep_parents'].append(head_idx)
                     parts['dep_labels'].append(token.dep_)
 
             # Add null entity array (matching null for CoreNLP)
-            parts['entity_cids'] = ['O' for _ in parts['words']]
-            parts['entity_types'] = ['O' for _ in parts['words']]
+            parts['entity_cids'] = [None for _ in parts['words']]
+            parts['entity_types'] = [None for _ in parts['words']]
 
             # make char_offsets relative to start of sentence
             parts['char_offsets'] = [
@@ -95,8 +95,8 @@ class LineCorpusParser(Parser):
             parts['text'] = text
 
             # Add null entity array (matching null for CoreNLP)
-            parts['entity_cids'] = ['O' for _ in parts['words']]
-            parts['entity_types'] = ['O' for _ in parts['words']]
+            parts['entity_cids'] = [None for _ in parts['words']]
+            parts['entity_types'] = [None for _ in parts['words']]
 
             parts['char_offsets'] = char_offsets
             parts['abs_char_offsets'] = abs_char_offsets
