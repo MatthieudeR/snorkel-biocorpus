@@ -132,7 +132,7 @@ class PubTatorTagProcessor(MetadataProcessor):
         if not name2id:
             name2id = dict(session.query(Document.name, Document.id).all())
 
-        tags = set()
+        tags = list()
         for content in self._doc_generator(file_path, self.encoding):
             doc_name, annotations = self._parse(content)
 
@@ -143,9 +143,10 @@ class PubTatorTagProcessor(MetadataProcessor):
             for anno in annotations:
                 doc_name, start, end, mention, concept_type, concept_uid = anno
                 src = self.concept_types[concept_type]
-                t = Tag(document_id=name2id[doc_name], abs_char_start=start, abs_char_end=end,
+                t = dict(document_id=name2id[doc_name], abs_char_start=start, abs_char_end=end,
                         concept_type=concept_type, concept_uid=concept_uid, source=src)
-                tags.add(t)
+                tags.append(t)
+
 
         return tags
 
@@ -158,17 +159,27 @@ class PubTatorTagProcessor(MetadataProcessor):
         :return:
         """
         tags = self.load_data(session, file_path)
-
+        added = 0
+        skipped = 0
         try:
-            seq_tags = []
+            seq_tags = set()
             while tags:
                 t = tags.pop()
-                seq_tags.append(SequenceTag(**t))
-                del t
+                if t["concept_type"]=="Chemical":
+                    if len(session.query(SequenceTag).filter(SequenceTag.document_id==t["document_id"]).filter(SequenceTag.abs_char_start==t["abs_char_start"]).filter(SequenceTag.source==t["source"]).all())>0:
+                       skipped+=1
+                    else:
+                        added+=1
+                        seq_tags.add(SequenceTag(**t))
+                        session.add(SequenceTag(**t))
 
-            session.bulk_save_objects(seq_tags)
+                del t
+                if (added +skipped) %100 ==0:
+                    print "{} skipped, {} added".format(skipped,added)
+            seq_tags_list = list(seq_tags)
+            #session.add_all(seq_tags_list)
             session.commit()
-            print("Loaded {} tags...".format(len(seq_tags)))
+            print("Loaded {} tags on {}...".format(len(seq_tags_list),len(tags)))
         except Exception as e:
             print "ERROR! {}".format(e)
 
