@@ -15,10 +15,11 @@ class PubTatorParser(Parser):
     ENTITY_SEP = '~@~'
     STD_SPLITS_RGX = r'[\s\t\-\/\.]*'
 
-    def __init__(self, parser=Spacy(lang='en'), stop_on_err=True, encoding="utf-8"):
+    def __init__(self, parser=Spacy(lang='en'), stop_on_err=True, encoding="utf-8",annotation_types = None):
         super(PubTatorParser, self).__init__(name="PubTatorParser", encoding=encoding)
         self.parser = parser
         self.stop_on_err = stop_on_err
+        self.annotation_types = annotation_types
 
     def _scrub(self, mention):
         m = re.sub(r'\'\'|``', '"', mention)
@@ -101,6 +102,10 @@ class PubTatorParser(Parser):
 
         annotations = doc.meta["annotations"]
 
+        if self.annotation_types is not None:
+            annotations = [anno for anno in annotations if anno[4] in self.annotation_types]
+
+
         # Track how many annotations are correctly matches
         sents = []
         matched_annos = []
@@ -141,7 +146,7 @@ class PubTatorParser(Parser):
                         # Handle cases where we *do not* match the start token first by splitting start token
                         if si not in abs_offsets:
                             wi = 0
-                            while wi < len(abs_offsets) and abs_offsets[wi + 1] < si:
+                            while wi < len(abs_offsets)-1 and abs_offsets[wi + 1] < si:
                                 wi += 1
                             words = [sentence_parts['words'][j] for j in range(wi, we)]
 
@@ -288,10 +293,16 @@ class PubTatorDocPreprocessor(DocPreprocessor):
                 annos.append(anno)
 
         # Form a Document
-        doc = Document(
-            name=doc_id, stable_id=stable_id,
-            meta={}
-        )
+        if self.annotations:
+            doc = Document(
+                name=doc_id, stable_id=stable_id,
+                meta={"annotations" : annos}
+            )
+        else:
+            doc = Document(
+                name=doc_id, stable_id=stable_id,
+                meta={}
+            )
 
         # Return the doc
         return doc, doc_text, annos
@@ -331,9 +342,6 @@ class PubTatorDocPreprocessor(DocPreprocessor):
         """
         for content in self._doc_generator(file_path, self.encoding):
             doc, txt, annos = self._pubtator_parser(content)
-            if self.annotations:
-                yield doc, txt, annos
-            else:
-                yield doc, txt
+            yield doc, txt
 
 
