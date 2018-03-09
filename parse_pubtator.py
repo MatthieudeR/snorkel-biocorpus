@@ -70,8 +70,9 @@ def main(args):
     # Iterate through the splits
     start_ts = time()
     for fp in filelist:
-        doc_preprocessor = PubTatorDocPreprocessor(fp)
-        parser = Spacy() if args.parser == "spacy" else StanfordCoreNLPServer()
+        doc_preprocessor = PubTatorDocPreprocessor(fp,annotations=True)
+        parser_base = Spacy() if args.parser == "spacy" else StanfordCoreNLPServer()
+        parser = PubTatorParser(parser=parser_base,annotation_types = ["Chemical"])
         corpus_parser = CorpusParser(parser=parser)
         corpus_parser.apply(doc_preprocessor, parallelism=args.num_procs, clear=False)
         end_ts = time()
@@ -80,7 +81,7 @@ def main(args):
     # pubtator_tags = PubTatorTagProcessor()
     # for fp in filelist:
     #     # load entity tags
-    #     pubtator_tags.load_data(session, fp)
+    #     pubtator_tags.commit(session, fp)
 
     print "\nDONE in [%s]" % (time() - start_ts,)
 
@@ -88,7 +89,7 @@ def main(args):
 if __name__ == '__main__':
 
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("-d", "--dbname", type=str, default="postgresql:///biocorpus", help="SNORKELDB enviorn variable")
+    argparser.add_argument("-d", "--dbname", type=str, default="postgresql:///biocorpus", help="SNORKELDB environ variable")
     argparser.add_argument("-i", "--input_file", type=str, default="data/bioconcepts2pubtator_offsets.sample",
                            help="PubTator snapshot")
     argparser.add_argument("-s", "--split_size", type=int, default=50000, help="Number of documents per split")
@@ -103,7 +104,7 @@ if __name__ == '__main__':
 
     from snorkel import SnorkelSession
     from snorkel.parser import CorpusParser, Spacy, StanfordCoreNLPServer
-    from pubtator import PubTatorDocPreprocessor, PubTatorTagProcessor
+    from pubtator import PubTatorDocPreprocessor, PubTatorTagProcessor,PubTatorParser
 
     main(args)
 
